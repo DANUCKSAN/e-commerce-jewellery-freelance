@@ -1,33 +1,37 @@
 @import "tailwindcss";
 
 @theme {
-  /* Dark shades */
-  --color-dark-900: #111111;
-  --color-dark-700: #757575;
-  --color-dark-500: #aaaaaa;
+  --color-dark-900: #171411;
+  --color-dark-700: #746c64;
+  --color-dark-500: #a59c93;
+  --color-light-100: #fffdf9;
+  --color-light-200: #f8f4ee;
+  --color-light-300: #e7ded3;
+  --color-light-400: #cec2b5;
+  --color-green: #5b2333;
+  --color-red: #a43d4d;
+  --color-orange: #c2a36b;
+  --color-ink: #171411;
+  --color-ivory: #f8f4ee;
+  --color-paper: #fffdf9;
+  --color-stone: #e7ded3;
+  --color-oxblood: #5b2333;
+  --color-champagne: #c2a36b;
+  --color-platinum: #c8cbce;
 
-  /* Light shades */
-  --color-light-100: #ffffff;
-  --color-light-200: #f5f5f5;
-  --color-light-300: #e5e5e5;
-  --color-light-400: #cccccc;
-
-  /* Supporting colors */
-  --color-green: #007d48;
-  --color-red: #d33918;
-  --color-orange: #d37918;
-
-  /* Font family */
-  --font-jost: "Jost", "Avenir Next", "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-jost: "Avenir Next", Avenir, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-sans: "Avenir Next", Avenir, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-display: "Iowan Old Style", Baskerville, Georgia, "Times New Roman", serif;
+  --font-serif: "Iowan Old Style", Baskerville, Georgia, "Times New Roman", serif;
 
   /* Heading sizes */
   --text-heading-1: 72px;
   --text-heading-1--line-height: 78px;
-  --text-heading-1--font-weight: 700;
+  --text-heading-1--font-weight: 500;
 
   --text-heading-2: 56px;
   --text-heading-2--line-height: 60px;
-  --text-heading-2--font-weight: 700;
+  --text-heading-2--font-weight: 500;
 
   --text-heading-3: 24px;
   --text-heading-3--line-height: 30px;
@@ -61,7 +65,7 @@
 @layer base {
   html {
     scroll-behavior: smooth;
-    scroll-padding-top: 4.5rem;
+    scroll-padding-top: 7.5rem;
     background: var(--color-light-200);
   }
 
@@ -70,13 +74,44 @@
     margin: 0;
     background: var(--color-light-200);
     color: var(--color-dark-900);
-    font-family: var(--font-jost);
+    font-family: var(--font-sans);
     text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
   }
 
   ::selection {
-    background: var(--color-green);
-    color: var(--color-light-100);
+    background: var(--color-oxblood);
+    color: var(--color-paper);
+  }
+
+  :focus-visible {
+    scroll-margin-block: 8rem;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .aurelle-rule {
+    background: linear-gradient(90deg, transparent, rgb(194 163 107 / 0.8), transparent);
+  }
+
+  .luxury-shadow {
+    box-shadow: 0 28px 80px rgb(48 35 25 / 0.12);
   }
 }
 

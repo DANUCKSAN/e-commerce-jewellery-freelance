@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 
 import AuthForm from "@/components/AuthForm";
-import { getAuthSession } from "@/lib/auth/guards";
-import { parseSafeReturnPath } from "@/lib/auth/validation";
+import { parseSafeReturnPath } from "@/lib/safe-return-path";
 
 export const metadata: Metadata = {
   title: "Create an account",
-  description: "Create a PVtoEV account and start planning your home energy system.",
+  description:
+    "Create an Aurelle account to save treasured pieces and shape your private collection.",
 };
 
 type SignUpPageProps = {
@@ -19,8 +18,6 @@ export default async function SignUpPage({ searchParams }: SignUpPageProps) {
   const callbackURL = parseSafeReturnPath(
     Array.isArray(params.callbackURL) ? params.callbackURL[0] : params.callbackURL,
   );
-
-  if (await getAuthSession()) redirect(callbackURL);
 
   return <AuthForm mode="sign-up" callbackURL={callbackURL} />;
 }

@@ -1,70 +1,65 @@
-import type { CatalogueProduct } from "@/lib/catalogue";
-
-export type ProductSector = "solar" | "storage" | "charging" | "outdoors";
+import type {
+  CatalogueProduct,
+  JewelleryGemstone,
+  JewelleryMetal,
+  JewelleryProductType,
+  JewelleryCategory,
+  ProductAvailability,
+} from "@/lib/catalogue";
 
 export type StorefrontProduct = {
   id: string;
+  category: JewelleryCategory;
+  categoryLabel: string;
   name: string;
   brand: string;
-  sector: ProductSector;
-  sectorLabel: string;
+  productType: JewelleryProductType;
+  productTypeLabel: string;
+  material: string;
+  metals: JewelleryMetal[];
+  gemstones: JewelleryGemstone[];
   specification: string;
+  image: string;
   priceCents: number;
+  currency: string;
+  taxInclusive: boolean;
+  availability: ProductAvailability;
   stock: number;
   featured: boolean;
 };
 
-const categoryPresentation: Record<
-  string,
-  Pick<StorefrontProduct, "sector" | "sectorLabel">
-> = {
-  "solar-panels": { sector: "solar", sectorLabel: "Solar panels" },
-  "expansion-battery-modules": {
-    sector: "storage",
-    sectorLabel: "Energy storage",
-  },
-  "portable-power-stations": {
-    sector: "storage",
-    sectorLabel: "Energy storage",
-  },
-  "wall-mounted-ev-chargers": {
-    sector: "charging",
-    sectorLabel: "EV chargers",
-  },
-  "portable-coolers": {
-    sector: "outdoors",
-    sectorLabel: "Portable coolers",
-  },
+const categoryLabels: Record<JewelleryCategory, string> = {
+  diamond: "Diamond",
+  gold: "Gold",
+  silver: "Silver",
+  platinum: "Platinum",
 };
 
-function removeSeedMarker(value: string) {
-  return value
-    .replace(/\s+—\s+Demo$/i, "")
-    .replace(/^Demo\s+/i, "")
-    .replace(/\s*·?\s*demo(?:\s+configuration)?/gi, "")
-    .replace(/\s*·\s*·\s*/g, " · ")
-    .trim();
+export function cleanCatalogueText(value: string) {
+  return value.replace(/\s+/g, " ").trim();
 }
 
 export function createStorefrontProducts(
   products: CatalogueProduct[],
 ): StorefrontProduct[] {
-  return products.flatMap((product) => {
-    const presentation = categoryPresentation[product.categorySlug];
-    if (!presentation) return [];
-
-    return [
-      {
-        id: product.slug,
-        name: removeSeedMarker(product.name),
-        brand: product.manufacturer,
-        sector: presentation.sector,
-        sectorLabel: presentation.sectorLabel,
-        specification: removeSeedMarker(product.specification),
-        priceCents: product.priceCents,
-        stock: product.stock,
-        featured: product.featured,
-      },
-    ];
-  });
+  return products.map((product) => ({
+    id: product.slug,
+    category: product.category,
+    categoryLabel: categoryLabels[product.category],
+    name: cleanCatalogueText(product.name),
+    brand: product.manufacturer,
+    productType: product.productType,
+    productTypeLabel: product.productTypeLabel,
+    material: product.material,
+    metals: [...product.metals],
+    gemstones: [...product.gemstones],
+    specification: cleanCatalogueText(product.specification),
+    image: product.image,
+    priceCents: product.priceCents,
+    currency: product.currency,
+    taxInclusive: product.taxInclusive,
+    availability: product.availability,
+    stock: product.stock,
+    featured: product.featured,
+  }));
 }

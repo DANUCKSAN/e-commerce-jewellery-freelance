@@ -3,18 +3,28 @@ import type { Metadata, Viewport } from "next";
 import "../globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { getSiteUrl } from "@/lib/site-url";
 
 export const metadata: Metadata = {
+  metadataBase: getSiteUrl(),
   title: {
-    default: "PVtoEV | Solar, storage and smarter home energy",
-    template: "%s | PVtoEV",
+    default: "AURELLE | Modern fine jewellery",
+    template: "%s | AURELLE",
   },
   description:
-    "Shop solar panels, energy storage, EV chargers and portable coolers from PVtoEV's focused renewable catalogue.",
+    "Discover modern heirlooms in diamond, gold, silver and platinum, thoughtfully designed by AURELLE in Australia.",
+  keywords: [
+    "fine jewellery",
+    "diamond jewellery",
+    "gold jewellery",
+    "silver jewellery",
+    "platinum jewellery",
+    "Australian jewellery",
+  ],
 };
 
 export const viewport: Viewport = {
-  themeColor: "#101916",
+  themeColor: "#171411",
 };
 
 export default function StorefrontLayout({
@@ -25,13 +35,13 @@ export default function StorefrontLayout({
   return (
     <html
       lang="en"
-      className="h-full bg-light-200 antialiased"
+      className="h-full bg-light-100 antialiased"
       data-scroll-behavior="smooth"
     >
-      <body className="min-h-full overflow-x-clip bg-light-200 font-jost text-dark-900">
+      <body className="min-h-full overflow-x-clip bg-light-100 font-sans text-dark-900">
         <Navbar />
         {children}
-        <Footer newsletter={false} />
+        <Footer />
       </body>
     </html>
   );

@@ -1,32 +1,43 @@
-export default function CatalogueLoading() {
+export default function StorefrontLoading() {
   return (
     <main
-      className="min-h-[calc(100svh-4.5rem)] animate-pulse bg-light-200 font-jost"
-      aria-label="Loading catalogue"
+      className="min-h-[calc(100svh-4.75rem)] bg-[#F8F4EE] font-jost"
+      aria-label="Loading the Aurelle collection"
       aria-busy="true"
     >
-      <section className="bg-[#0d1714] px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
-        <div className="mx-auto max-w-[94rem]">
-          <div className="h-3 w-44 rounded-full bg-white/10" />
-          <div className="mt-6 h-20 max-w-3xl rounded-3xl bg-white/10 sm:h-28" />
+      <section className="overflow-hidden bg-[#171411] px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
+        <div className="mx-auto max-w-[94rem] animate-pulse motion-reduce:animate-none">
+          <div className="h-2.5 w-40 rounded-full bg-[#C2A36B]/22" />
+          <div className="mt-7 h-18 max-w-2xl rounded-2xl bg-white/8 sm:h-28" />
+          <div className="mt-5 h-4 max-w-xl rounded-full bg-white/6" />
           <div className="mt-12 grid grid-cols-2 gap-2 md:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
-              <div key={index} className="h-24 rounded-[1.35rem] bg-white/[0.07]" />
+              <div
+                key={index}
+                className="h-22 rounded-xl border border-white/6 bg-white/[0.045]"
+              />
             ))}
           </div>
         </div>
       </section>
 
       <section className="px-4 py-14 sm:px-6 lg:px-8 lg:py-24">
-        <div className="mx-auto max-w-[94rem]">
-          <div className="h-12 max-w-xl rounded-2xl bg-dark-900/10" />
-          <div className="mt-9 h-36 rounded-[1.6rem] bg-dark-900/8" />
-          <div className="mt-7 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mx-auto max-w-[94rem] animate-pulse motion-reduce:animate-none">
+          <div className="flex items-end justify-between gap-8">
+            <div className="w-full max-w-xl">
+              <div className="h-2.5 w-28 rounded-full bg-[#5B2333]/12" />
+              <div className="mt-5 h-12 max-w-lg rounded-xl bg-[#171411]/8 sm:h-16" />
+            </div>
+            <div className="hidden h-11 w-32 rounded-full border border-[#171411]/8 sm:block" />
+          </div>
+          <div className="mt-9 h-24 rounded-[1.25rem] border border-[#171411]/7 bg-white/55 sm:h-28" />
+          <div className="mt-7 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, index) => (
-              <div
-                key={index}
-                className="aspect-[0.78] rounded-[1.75rem] bg-dark-900/8"
-              />
+              <div key={index}>
+                <div className="aspect-[0.82] rounded-[1.4rem] bg-[#171411]/7" />
+                <div className="mt-4 h-3 w-2/3 rounded-full bg-[#171411]/8" />
+                <div className="mt-3 h-2.5 w-1/3 rounded-full bg-[#C2A36B]/20" />
+              </div>
             ))}
           </div>
         </div>

@@ -1,122 +1,141 @@
-import { SlidersHorizontal, X } from "lucide-react";
+import { ArrowRight, SlidersHorizontal, X } from "lucide-react";
 import Link from "next/link";
 
 import ProductCard from "@/components/ProductCard";
-import type { ProductSector, StorefrontProduct } from "@/lib/storefront-products";
+import type { JewelleryCategory, ProductType } from "@/lib/catalogue";
+import type { StorefrontProduct } from "@/lib/storefront-products";
 
-export type SectorFilter = "all" | ProductSector;
-export type PriceFilter = "all" | "under-500" | "500-1000" | "over-1000";
+export type CategoryFilter = "all" | JewelleryCategory;
+export type ProductTypeFilter = "all" | ProductType;
+export type PriceFilter = "all" | "under-1000" | "1000-3000" | "over-3000";
 export type SortOrder = "curated" | "price-asc" | "price-desc";
 
 export interface ProductCatalogueProps {
   products: StorefrontProduct[];
-  sector?: SectorFilter;
+  category?: CategoryFilter;
+  productType?: ProductTypeFilter;
   price?: PriceFilter;
   sort?: SortOrder;
+  mode?: "featured" | "catalogue";
 }
 
-const sectorFilters: ReadonlyArray<{
-  value: SectorFilter;
-  label: string;
-}> = [
-  { value: "all", label: "All products" },
-  { value: "solar", label: "Solar panels" },
-  { value: "storage", label: "Energy storage" },
-  { value: "charging", label: "EV chargers" },
-  { value: "outdoors", label: "Portable coolers" },
+const categoryFilters: ReadonlyArray<{ value: CategoryFilter; label: string }> = [
+  { value: "all", label: "All pieces" },
+  { value: "diamond", label: "Diamond" },
+  { value: "gold", label: "Gold" },
+  { value: "silver", label: "Silver" },
+  { value: "platinum", label: "Platinum" },
+];
+
+const productTypeFilters: ReadonlyArray<{ value: ProductTypeFilter; label: string }> = [
+  { value: "all", label: "All types" },
+  { value: "ring", label: "Rings" },
+  { value: "earrings", label: "Earrings" },
+  { value: "necklace", label: "Necklaces" },
+  { value: "pendant", label: "Pendants" },
+  { value: "bracelet", label: "Bracelets" },
 ];
 
 function matchesPrice(priceCents: number, filter: PriceFilter) {
-  if (filter === "under-500") return priceCents < 50_000;
-  if (filter === "500-1000") {
-    return priceCents >= 50_000 && priceCents <= 100_000;
-  }
-  if (filter === "over-1000") return priceCents > 100_000;
+  if (filter === "under-1000") return priceCents < 100_000;
+  if (filter === "1000-3000") return priceCents >= 100_000 && priceCents <= 300_000;
+  if (filter === "over-3000") return priceCents > 300_000;
   return true;
 }
 
 function catalogueHref({
-  sector,
+  category,
+  productType,
   price,
   sort,
 }: {
-  sector: SectorFilter;
+  category: CategoryFilter;
+  productType: ProductTypeFilter;
   price: PriceFilter;
   sort: SortOrder;
 }) {
   const query = new URLSearchParams();
-  if (sector !== "all") query.set("sector", sector);
+  if (category !== "all") query.set("category", category);
+  if (productType !== "all") query.set("type", productType);
   if (price !== "all") query.set("price", price);
   if (sort !== "curated") query.set("sort", sort);
-
   const search = query.toString();
-  return `/${search ? `?${search}` : ""}#catalogue`;
+  return `/products${search ? `?${search}` : ""}#collection`;
 }
 
-export function ProductCatalogue({
+export default function ProductCatalogue({
   products,
-  sector = "all",
+  category = "all",
+  productType = "all",
   price = "all",
   sort = "curated",
+  mode = "catalogue",
 }: ProductCatalogueProps) {
-  const filteredProducts = products.filter(
-    (product) =>
-      (sector === "all" || product.sector === sector) &&
-      matchesPrice(product.priceCents, price),
-  );
+  if (mode === "featured") {
+    const featuredProducts = products.filter((product) => product.featured).slice(0, 4);
 
-  if (sort === "price-asc") {
-    filteredProducts.sort((a, b) => a.priceCents - b.priceCents);
-  } else if (sort === "price-desc") {
-    filteredProducts.sort((a, b) => b.priceCents - a.priceCents);
+    return (
+      <section id="featured" aria-labelledby="featured-heading" className="bg-light-100 px-4 py-16 sm:px-6 sm:py-24 lg:px-8 lg:py-28">
+        <div className="mx-auto max-w-[94rem]">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-[0.65rem] font-bold uppercase tracking-[0.22em] text-oxblood">
+                The Aurelle edit
+              </p>
+              <h2 id="featured-heading" className="mt-3 font-display text-[clamp(3rem,6vw,6rem)] font-medium leading-[0.88] tracking-[-0.05em]">
+                Pieces to begin with.
+              </h2>
+            </div>
+            <Link
+              href="/products"
+              className="group inline-flex min-h-11 items-center gap-2 self-start rounded-full border border-dark-900/20 px-5 text-xs font-bold text-dark-900 transition-colors hover:border-oxblood hover:text-oxblood focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oxblood focus-visible:ring-offset-2 sm:self-auto"
+            >
+              View all pieces
+              <ArrowRight aria-hidden="true" className="size-4 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+          </div>
+
+          <ul className="mt-9 grid gap-x-4 gap-y-10 sm:grid-cols-2 sm:gap-x-5 lg:grid-cols-4 lg:gap-x-6">
+            {featuredProducts.map((product) => (
+              <li key={product.id} className="min-w-0">
+                <ProductCard product={product} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    );
   }
 
-  const hasActiveFilters = sector !== "all" || price !== "all";
+  const filteredProducts = products
+    .filter(
+      (product) =>
+        (category === "all" || product.category === category) &&
+        (productType === "all" || product.productType === productType) &&
+        matchesPrice(product.priceCents, price),
+    )
+    .sort((a, b) => {
+      if (sort === "price-asc") return a.priceCents - b.priceCents;
+      if (sort === "price-desc") return b.priceCents - a.priceCents;
+      return Number(b.featured) - Number(a.featured);
+    });
+
+  const hasActiveFilters = category !== "all" || productType !== "all" || price !== "all";
 
   return (
-    <section
-      id="catalogue"
-      aria-labelledby="catalogue-heading"
-      className="scroll-mt-20 bg-light-200 px-4 py-14 sm:px-6 sm:py-18 lg:px-8 lg:py-24"
-    >
+    <section id="collection" aria-label="Aurelle product collection" className="scroll-mt-28 bg-light-100 px-4 pb-18 sm:px-6 sm:pb-24 lg:px-8 lg:pb-28">
       <div className="mx-auto max-w-[94rem]">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="text-footnote font-semibold uppercase tracking-[0.17em] text-green">
-              Live catalogue
-            </p>
-            <h2
-              id="catalogue-heading"
-              className="mt-3 text-[clamp(2.25rem,5vw,4.6rem)] font-bold leading-[0.94] tracking-[-0.06em] text-dark-900"
-            >
-              Shop smarter energy.
-            </h2>
-          </div>
-          <p className="max-w-md text-body leading-7 text-dark-700">
-            Browse the current catalogue across the four product sectors PVtoEV
-            is built to sell.
-          </p>
-        </div>
-
-        <div className="mt-9 rounded-[1.6rem] border border-dark-900/8 bg-light-100 p-3 shadow-[0_12px_40px_rgba(17,17,17,0.045)] sm:p-4">
-          <div className="flex items-center gap-2 border-b border-light-300 pb-3 text-footnote font-semibold uppercase tracking-[0.13em] text-dark-700 lg:hidden">
-            <SlidersHorizontal aria-hidden="true" className="size-4" strokeWidth={1.8} />
-            Refine products
-          </div>
-
-          <nav
-            aria-label="Filter by product sector"
-            className="mt-3 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:mt-0 lg:flex-wrap"
-          >
-            {sectorFilters.map((filter) => (
+        <div className="border-y border-dark-900/12 py-5">
+          <nav aria-label="Filter collection by material" className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {categoryFilters.map((filter) => (
               <Link
                 key={filter.value}
-                href={catalogueHref({ sector: filter.value, price, sort })}
-                aria-current={sector === filter.value ? "page" : undefined}
-                className={`inline-flex min-h-11 shrink-0 items-center rounded-full px-4 text-caption font-semibold transition-[background-color,color,box-shadow] duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green focus-visible:ring-offset-2 ${
-                  sector === filter.value
-                    ? "bg-dark-900 text-light-100 shadow-[0_8px_20px_rgba(17,17,17,0.14)]"
-                    : "bg-light-200 text-dark-700 hover:bg-light-300 hover:text-dark-900"
+                href={catalogueHref({ category: filter.value, productType, price, sort })}
+                aria-current={category === filter.value ? "page" : undefined}
+                className={`inline-flex min-h-11 shrink-0 items-center rounded-full border px-4 text-[0.67rem] font-bold uppercase tracking-[0.11em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oxblood focus-visible:ring-offset-2 ${
+                  category === filter.value
+                    ? "border-dark-900 bg-dark-900 text-white"
+                    : "border-dark-900/13 bg-transparent text-dark-700 hover:border-oxblood hover:text-oxblood"
                 }`}
               >
                 {filter.label}
@@ -124,70 +143,60 @@ export function ProductCatalogue({
             ))}
           </nav>
 
-          <form
-            action="/"
-            method="get"
-            className="mt-3 grid gap-3 border-t border-light-300 pt-3 sm:grid-cols-2 lg:grid-cols-[minmax(11rem,15rem)_minmax(11rem,15rem)_auto_1fr_auto] lg:items-end"
-          >
-            {sector !== "all" ? (
-              <input type="hidden" name="sector" value={sector} />
-            ) : null}
+          <form action="/products" method="get" className="mt-4 grid gap-3 border-t border-dark-900/10 pt-4 sm:grid-cols-2 lg:grid-cols-[auto_minmax(10rem,14rem)_minmax(10rem,14rem)_minmax(10rem,14rem)_1fr_auto] lg:items-end">
+            <div className="hidden min-h-11 items-center gap-2 text-xs font-semibold text-dark-700 lg:flex">
+              <SlidersHorizontal aria-hidden="true" className="size-4" strokeWidth={1.5} />
+              Refine
+            </div>
+            {category !== "all" ? <input type="hidden" name="category" value={category} /> : null}
 
-            <label className="grid gap-1.5 text-footnote font-medium text-dark-700">
-              Price
-              <select
-                name="price"
-                defaultValue={price}
-                className="min-h-11 rounded-xl border border-light-300 bg-light-100 px-3 text-caption text-dark-900 outline-none transition-[border-color,box-shadow] focus:border-green focus:ring-2 focus:ring-green/15"
-              >
-                <option value="all">Any price</option>
-                <option value="under-500">Under $500</option>
-                <option value="500-1000">$500–$1,000</option>
-                <option value="over-1000">Over $1,000</option>
+            <label className="grid gap-1.5 text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-dark-700">
+              Piece
+              <select name="type" defaultValue={productType} className="min-h-11 rounded-none border border-dark-900/15 bg-light-100 px-3 text-xs normal-case tracking-normal text-dark-900 outline-none transition-[border-color,box-shadow] focus:border-oxblood focus:ring-2 focus:ring-oxblood/10">
+                {productTypeFilters.map((filter) => (
+                  <option key={filter.value} value={filter.value}>{filter.label}</option>
+                ))}
               </select>
             </label>
 
-            <label className="grid gap-1.5 text-footnote font-medium text-dark-700">
-              Sort by
-              <select
-                name="sort"
-                defaultValue={sort}
-                className="min-h-11 rounded-xl border border-light-300 bg-light-100 px-3 text-caption text-dark-900 outline-none transition-[border-color,box-shadow] focus:border-green focus:ring-2 focus:ring-green/15"
-              >
-                <option value="curated">Recommended</option>
+            <label className="grid gap-1.5 text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-dark-700">
+              Price
+              <select name="price" defaultValue={price} className="min-h-11 rounded-none border border-dark-900/15 bg-light-100 px-3 text-xs normal-case tracking-normal text-dark-900 outline-none transition-[border-color,box-shadow] focus:border-oxblood focus:ring-2 focus:ring-oxblood/10">
+                <option value="all">Any price</option>
+                <option value="under-1000">Under $1,000</option>
+                <option value="1000-3000">$1,000–$3,000</option>
+                <option value="over-3000">$3,000+</option>
+              </select>
+            </label>
+
+            <label className="grid gap-1.5 text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-dark-700">
+              Sort
+              <select name="sort" defaultValue={sort} className="min-h-11 rounded-none border border-dark-900/15 bg-light-100 px-3 text-xs normal-case tracking-normal text-dark-900 outline-none transition-[border-color,box-shadow] focus:border-oxblood focus:ring-2 focus:ring-oxblood/10">
+                <option value="curated">Curated</option>
                 <option value="price-asc">Price: low to high</option>
                 <option value="price-desc">Price: high to low</option>
               </select>
             </label>
 
-            <button
-              type="submit"
-              className="inline-flex min-h-11 items-center justify-center rounded-full bg-green px-5 text-caption font-semibold text-light-100 transition-colors hover:bg-dark-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green focus-visible:ring-offset-2"
-            >
-              Apply
-            </button>
-
-            <p
-              aria-live="polite"
-              className="self-center text-caption text-dark-700 sm:col-span-2 lg:col-span-1 lg:justify-self-end"
-            >
-              Showing {filteredProducts.length} of {products.length} products
+            <p aria-live="polite" className="self-center text-xs text-dark-700 lg:justify-self-end">
+              {filteredProducts.length} {filteredProducts.length === 1 ? "piece" : "pieces"}
             </p>
 
-            {hasActiveFilters ? (
-              <Link
-                href="/#catalogue"
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-light-300 px-4 text-caption font-semibold text-dark-900 transition-colors hover:border-dark-500 hover:bg-light-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green focus-visible:ring-offset-2"
-              >
-                <X aria-hidden="true" className="size-4" strokeWidth={1.8} />
-                Clear
-              </Link>
-            ) : null}
+            <div className="flex gap-2">
+              <button type="submit" className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full bg-oxblood px-5 text-xs font-bold text-white transition-colors hover:bg-dark-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oxblood focus-visible:ring-offset-2">
+                Apply
+              </button>
+              {hasActiveFilters ? (
+                <Link href="/products#collection" aria-label="Clear all filters" className="inline-flex size-11 items-center justify-center rounded-full border border-dark-900/15 text-dark-900 transition-colors hover:border-oxblood hover:text-oxblood focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oxblood focus-visible:ring-offset-2">
+                  <X aria-hidden="true" className="size-4" />
+                </Link>
+              ) : null}
+            </div>
           </form>
         </div>
 
         {filteredProducts.length > 0 ? (
-          <ul className="mt-7 grid gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 xl:gap-7">
+          <ul className="mt-9 grid gap-x-4 gap-y-12 sm:grid-cols-2 sm:gap-x-5 lg:grid-cols-3 xl:grid-cols-4 xl:gap-x-6">
             {filteredProducts.map((product) => (
               <li key={product.id} className="min-w-0">
                 <ProductCard product={product} />
@@ -195,18 +204,13 @@ export function ProductCatalogue({
             ))}
           </ul>
         ) : (
-          <div className="mt-7 rounded-[2rem] border border-dashed border-light-400 bg-light-100 px-5 py-16 text-center sm:px-8">
-            <p className="text-heading-3 font-semibold text-dark-900">
-              No products match those filters.
+          <div className="mt-9 border border-dashed border-dark-900/20 bg-light-200 px-5 py-20 text-center">
+            <p className="font-display text-[2.2rem] font-semibold">Nothing quite matches.</p>
+            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-dark-700">
+              Try another combination or return to the full Aurelle collection.
             </p>
-            <p className="mt-2 text-body text-dark-700">
-              Try another price range or return to the complete catalogue.
-            </p>
-            <Link
-              href="/#catalogue"
-              className="mt-6 inline-flex min-h-11 items-center rounded-full bg-dark-900 px-5 text-caption font-semibold text-light-100 transition-colors hover:bg-green focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green focus-visible:ring-offset-2"
-            >
-              Show all products
+            <Link href="/products#collection" className="mt-6 inline-flex min-h-11 items-center rounded-full bg-dark-900 px-5 text-xs font-bold text-white hover:bg-oxblood focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oxblood focus-visible:ring-offset-2">
+              View all pieces
             </Link>
           </div>
         )}
@@ -214,5 +218,3 @@ export function ProductCatalogue({
     </section>
   );
 }
-
-export default ProductCatalogue;

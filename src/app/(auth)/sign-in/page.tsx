@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 
 import AuthForm from "@/components/AuthForm";
-import { getAuthSession } from "@/lib/auth/guards";
-import { parseSafeReturnPath } from "@/lib/auth/validation";
+import { parseSafeReturnPath } from "@/lib/safe-return-path";
 
 export const metadata: Metadata = {
   title: "Sign in",
-  description: "Sign in to continue planning your PVtoEV home energy project.",
+  description:
+    "Sign in to your Aurelle account and return to your private fine-jewellery collection.",
 };
 
 type SignInPageProps = {
@@ -19,8 +18,6 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
   const callbackURL = parseSafeReturnPath(
     Array.isArray(params.callbackURL) ? params.callbackURL[0] : params.callbackURL,
   );
-
-  if (await getAuthSession()) redirect(callbackURL);
 
   return <AuthForm mode="sign-in" callbackURL={callbackURL} />;
 }
