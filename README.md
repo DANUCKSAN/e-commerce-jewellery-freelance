@@ -34,11 +34,11 @@ Open [http://localhost:3000](http://localhost:3000). No database, authentication
 
 ## Project structure
 
-- `src/app/(root)` — storefront, collection, product, and checkout routes
-- `src/app/(auth)` — sign-in and account creation experiences
-- `src/components` — shared editorial and commerce UI
-- `src/lib/catalogue.ts` — typed Aurelle catalogue and product fixtures
-- `src/lib/storefront-products.ts` — presentation adapter for jewellery cards and filters
+- `app/(root)` — storefront, collection, product, and checkout routes
+- `app/(auth)` — sign-in and account creation experiences
+- `components` — shared editorial and commerce UI
+- `lib/catalogue.ts` — typed Aurelle catalogue and product fixtures
+- `lib/storefront-products.ts` — presentation adapter for jewellery cards and filters
 - `public/images/aurelle` — original, locally served campaign and product imagery
 
 ## Validation
