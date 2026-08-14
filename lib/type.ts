@@ -1,10 +1,7 @@
-import { AuthFormValues, AuthMode } from "./validations/auth";
+import type { AuthFormValues, AuthMode } from "./validations/auth";
 
-
-
-
-
-export interface AuthFormProps{
-    mode:AuthMode;
-    onSubmit:(values:AuthFormValues) => void | Promise<void>;
+export interface AuthFormProps {
+  errorMessage?: string | null;
+  mode: AuthMode;
+  onSubmit: (values: AuthFormValues) => Promise<void>;
 }
