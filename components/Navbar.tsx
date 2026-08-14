@@ -1,8 +1,25 @@
 "use client";
 
-import { Menu, ShoppingBag, UserRound, X } from "lucide-react";
+import {
+  ChevronDown,
+  LogOut,
+  Menu,
+  ShoppingBag,
+  UserRound,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
+
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  getAuthErrorMessage,
+  getCurrentUser,
+  getFirstName,
+  getUserInitials,
+  signOut,
+  type AuthUser,
+} from "@/lib/appwrite/auth.service";
 
 import BrandMark from "./BrandMark";
 
@@ -15,18 +32,21 @@ const links = [
   { label: "Our craft", href: "/#craft" },
 ] as const;
 
-const iconLinks = [
-  { label: "Your account", href: "/sign-in", icon: UserRound },
-  { label: "Sample checkout", href: "/checkout", icon: ShoppingBag },
-] as const;
-
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oxblood focus-visible:ring-offset-2 focus-visible:ring-offset-light-100";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const [accountError, setAccountError] = useState<string | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
   const menuId = useId();
-  const buttonRef = useRef<HTMLButtonElement>(null);
+  const accountMenuId = useId();
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const accountButtonRef = useRef<HTMLButtonElement>(null);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -34,7 +54,7 @@ export default function Navbar() {
     function handleKeydown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setIsOpen(false);
-        buttonRef.current?.focus();
+        menuButtonRef.current?.focus();
       }
     }
 
@@ -55,6 +75,91 @@ export default function Navbar() {
     return () => media.removeEventListener("change", close);
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    const loadingFallback = window.setTimeout(() => {
+      if (active) setIsLoadingUser(false);
+    }, 3_000);
+
+    getCurrentUser()
+      .then((currentUser) => {
+        if (active) setUser(currentUser);
+      })
+      .catch(() => {
+        if (active) setUser(null);
+      })
+      .finally(() => {
+        window.clearTimeout(loadingFallback);
+        if (active) setIsLoadingUser(false);
+      });
+
+    return () => {
+      active = false;
+      window.clearTimeout(loadingFallback);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isAccountOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      if (
+        event.target instanceof Node &&
+        !accountMenuRef.current?.contains(event.target)
+      ) {
+        setIsAccountOpen(false);
+      }
+    }
+
+    function handleKeydown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsAccountOpen(false);
+        accountButtonRef.current?.focus();
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("keydown", handleKeydown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("keydown", handleKeydown);
+    };
+  }, [isAccountOpen]);
+
+  const displayName = user?.name.trim() || user?.email || "Aurelle account";
+  const firstName = user ? getFirstName(user.name, user.email) : "";
+  const initials = user ? getUserInitials(user.name, user.email) : "";
+
+  async function handleSignOut() {
+    if (isSigningOut) return;
+
+    setAccountError(null);
+    setIsSigningOut(true);
+
+    try {
+      await signOut();
+      setUser(null);
+      setIsAccountOpen(false);
+      setIsOpen(false);
+    } catch (error) {
+      setAccountError(getAuthErrorMessage(error, "sign-out"));
+    } finally {
+      setIsSigningOut(false);
+    }
+  }
+
+  function renderAvatar() {
+    if (!user) return null;
+
+    return (
+      <Avatar className="size-10 shrink-0 bg-oxblood text-white">
+        <AvatarFallback className="bg-oxblood font-semibold text-white">
+          {initials}
+        </AvatarFallback>
+      </Avatar>
+    );
+  }
+
   return (
     <header className="sticky inset-x-0 top-0 z-50 border-b border-dark-900/10 bg-light-100/92 text-dark-900 shadow-[0_8px_30px_rgba(23,20,17,.04)] backdrop-blur-xl">
       <div className="bg-dark-900 px-4 py-2 text-center text-[0.63rem] font-semibold uppercase tracking-[0.18em] text-light-100 sm:text-[0.68rem]">
@@ -63,7 +168,7 @@ export default function Navbar() {
 
       <nav
         aria-label="Primary navigation"
-        className="mx-auto flex min-h-[4.75rem] max-w-[100rem] items-center gap-4 px-4 sm:px-6 lg:px-8"
+        className="mx-auto flex min-h-[4.75rem] w-full max-w-[100rem] items-center gap-4 px-4 sm:px-6 lg:px-8"
       >
         <div className="flex flex-1 items-center lg:flex-none">
           <BrandMark />
@@ -82,28 +187,111 @@ export default function Navbar() {
           ))}
         </ul>
 
-        <div className="flex flex-1 items-center justify-end gap-0.5">
-          {iconLinks.map(({ label, href, icon: Icon }) => (
+        <div className="flex flex-1 items-center justify-end gap-1">
+          <Link
+            href="/checkout"
+            aria-label="Checkout preview"
+            className={`hidden size-10 items-center justify-center rounded-full text-dark-900 transition-colors hover:bg-light-200 sm:inline-flex ${focusRing}`}
+          >
+            <ShoppingBag
+              aria-hidden="true"
+              className="size-[1.08rem]"
+              strokeWidth={1.5}
+            />
+          </Link>
+
+          {isLoadingUser ? (
+            <span
+              aria-label="Loading account"
+              className="hidden size-10 animate-pulse rounded-full bg-light-300 sm:block"
+            />
+          ) : user ? (
+            <div ref={accountMenuRef} className="relative hidden sm:block">
+              <button
+                ref={accountButtonRef}
+                type="button"
+                aria-controls={accountMenuId}
+                aria-expanded={isAccountOpen}
+                aria-label={`Open account menu for ${displayName}`}
+                onClick={() => {
+                  setAccountError(null);
+                  setIsAccountOpen((open) => !open);
+                }}
+                className={`flex min-h-11 items-center gap-2 rounded-full pl-0.5 pr-2 text-sm font-semibold transition-colors hover:bg-light-200 ${focusRing}`}
+              >
+                {renderAvatar()}
+                <span className="hidden max-w-28 truncate xl:block">
+                  {firstName}
+                </span>
+                <ChevronDown
+                  aria-hidden="true"
+                  className={`size-3.5 transition-transform ${isAccountOpen ? "rotate-180" : ""}`}
+                />
+              </button>
+
+              {isAccountOpen ? (
+                <div
+                  id={accountMenuId}
+                  className="absolute right-0 top-[calc(100%+0.75rem)] w-72 overflow-hidden rounded-xl border border-dark-900/10 bg-light-100 shadow-[0_24px_55px_rgba(23,20,17,.16)]"
+                >
+                  <div className="border-b border-dark-900/10 px-4 py-4">
+                    <p className="truncate font-display text-lg font-semibold">
+                      {displayName}
+                    </p>
+                    <p className="mt-1 truncate text-xs text-dark-700">
+                      {user.email}
+                    </p>
+                  </div>
+                  {accountError ? (
+                    <p
+                      role="alert"
+                      className="px-4 pt-3 text-xs leading-5 text-red-700"
+                    >
+                      {accountError}
+                    </p>
+                  ) : null}
+                  <button
+                    type="button"
+                    disabled={isSigningOut}
+                    onClick={handleSignOut}
+                    className="flex min-h-12 w-full items-center gap-2.5 px-4 text-left text-sm font-semibold transition-colors hover:bg-light-200 disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-oxblood"
+                  >
+                    <LogOut aria-hidden="true" className="size-4" />
+                    {isSigningOut ? "Signing out…" : "Sign out"}
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          ) : (
             <Link
-              key={label}
-              href={href}
-              aria-label={label}
-              className={`relative hidden size-10 items-center justify-center rounded-full text-dark-900 transition-colors duration-300 hover:bg-light-200 sm:inline-flex ${focusRing}`}
+              href="/sign-in"
+              aria-label="Sign in"
+              className={`hidden size-10 items-center justify-center rounded-full text-dark-900 transition-colors hover:bg-light-200 sm:inline-flex ${focusRing}`}
             >
-              <Icon aria-hidden="true" className="size-[1.08rem]" strokeWidth={1.5} />
+              <UserRound
+                aria-hidden="true"
+                className="size-[1.08rem]"
+                strokeWidth={1.5}
+              />
             </Link>
-          ))}
+          )}
 
           <button
-            ref={buttonRef}
+            ref={menuButtonRef}
             type="button"
             aria-controls={menuId}
             aria-expanded={isOpen}
-            aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-label={
+              isOpen ? "Close navigation menu" : "Open navigation menu"
+            }
             onClick={() => setIsOpen((open) => !open)}
-            className={`inline-flex size-11 items-center justify-center rounded-full bg-dark-900 text-light-100 transition-transform active:scale-95 lg:hidden ${focusRing}`}
+            className={`ml-2 inline-flex size-11 items-center justify-center rounded-full bg-dark-900 text-light-100 transition-transform active:scale-95 lg:hidden ${focusRing}`}
           >
-            {isOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+            {isOpen ? (
+              <X aria-hidden="true" className="size-5" />
+            ) : (
+              <Menu aria-hidden="true" className="size-5" />
+            )}
           </button>
         </div>
       </nav>
@@ -119,7 +307,10 @@ export default function Navbar() {
         }`}
       >
         <div className="min-h-0 overflow-hidden">
-          <nav aria-label="Mobile navigation" className="max-h-[calc(100dvh-7.25rem)] overflow-y-auto px-4 py-5 sm:px-6">
+          <nav
+            aria-label="Mobile navigation"
+            className="max-h-[calc(100dvh-7.25rem)] overflow-y-auto px-4 py-5 sm:px-6"
+          >
             <ul className="divide-y divide-light-300">
               {links.map((item, index) => (
                 <li key={item.label}>
@@ -137,18 +328,68 @@ export default function Navbar() {
               ))}
             </ul>
 
-            <div className="mt-5 grid grid-cols-2 gap-2">
-              {iconLinks.map(({ label, href, icon: Icon }) => (
-                <Link
-                  key={label}
-                  href={href}
-                  onClick={() => setIsOpen(false)}
-                  className={`flex min-h-20 flex-col items-center justify-center gap-2 rounded-2xl bg-light-200 text-[0.62rem] font-semibold uppercase tracking-[0.1em] ${focusRing}`}
-                >
-                  <Icon aria-hidden="true" className="size-[1.15rem]" strokeWidth={1.5} />
-                  {label === "Your account" ? "Account" : "Checkout preview"}
-                </Link>
-              ))}
+            <div className="mt-5 border-t border-dark-900/10 pt-5">
+              {isLoadingUser ? (
+                <div className="h-20 animate-pulse rounded-xl bg-light-200" />
+              ) : user ? (
+                <div className="rounded-xl bg-light-200 p-4">
+                  <div className="flex min-w-0 items-center gap-3">
+                    {renderAvatar()}
+                    <div className="min-w-0">
+                      <p className="truncate font-display text-lg font-semibold">
+                        {displayName}
+                      </p>
+                      <p className="truncate text-xs text-dark-700">
+                        {user.email}
+                      </p>
+                    </div>
+                  </div>
+                  {accountError ? (
+                    <p
+                      role="alert"
+                      className="mt-3 text-xs leading-5 text-red-700"
+                    >
+                      {accountError}
+                    </p>
+                  ) : null}
+                  <button
+                    type="button"
+                    disabled={isSigningOut}
+                    onClick={handleSignOut}
+                    className={`mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-dark-900/15 text-xs font-bold disabled:cursor-wait disabled:opacity-60 ${focusRing}`}
+                  >
+                    <LogOut aria-hidden="true" className="size-4" />
+                    {isSigningOut ? "Signing out…" : "Sign out"}
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  <Link
+                    href="/sign-in"
+                    onClick={() => setIsOpen(false)}
+                    className={`flex min-h-16 items-center justify-center gap-2 rounded-xl bg-dark-900 px-3 text-xs font-bold text-white ${focusRing}`}
+                  >
+                    <UserRound aria-hidden="true" className="size-4" />
+                    Sign in
+                  </Link>
+                  <Link
+                    href="/sign-up"
+                    onClick={() => setIsOpen(false)}
+                    className={`flex min-h-16 items-center justify-center rounded-xl border border-dark-900/15 px-3 text-center text-xs font-bold ${focusRing}`}
+                  >
+                    Create account
+                  </Link>
+                </div>
+              )}
+
+              <Link
+                href="/checkout"
+                onClick={() => setIsOpen(false)}
+                className={`mt-2 flex min-h-14 items-center justify-center gap-2 rounded-xl bg-light-200 text-xs font-bold ${focusRing}`}
+              >
+                <ShoppingBag aria-hidden="true" className="size-4" />
+                Checkout preview
+              </Link>
             </div>
           </nav>
         </div>

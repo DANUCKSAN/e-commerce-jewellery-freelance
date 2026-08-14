@@ -4,7 +4,8 @@ import LegalPage from "../../../components/LegalPage";
 
 export const metadata: Metadata = {
   title: "Privacy",
-  description: "Illustrative privacy information for the Aurelle portfolio storefront.",
+  description:
+    "Illustrative privacy information for the Aurelle portfolio storefront.",
 };
 
 const sections = [
@@ -13,8 +14,8 @@ const sections = [
     copy: "Checkout, promotion and newsletter controls currently demonstrate frontend interaction only. No payment is processed, and those preview details are not stored by Aurelle.",
   },
   {
-    title: "Accounts and future services",
-    copy: "Account screens are prepared for a later backend phase. Before production, authentication, storage, retention and consent practices must be documented against the services actually connected.",
+    title: "Accounts and authentication",
+    copy: "Registration and sign-in are provided through Appwrite Authentication. Appwrite processes the name, email, password credentials and session information needed to create and secure an account. Retention, access and deletion procedures must be finalised before a commercial launch.",
   },
   {
     title: "Analytics and cookies",
