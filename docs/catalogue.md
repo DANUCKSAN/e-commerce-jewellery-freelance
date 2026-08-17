@@ -1,6 +1,6 @@
 # Catalogue data model
 
-The first single-vendor commerce feature is a read-only public product catalogue backed by Appwrite TablesDB and Storage. Resource IDs live in `appwrite/catalogue-resources.json`, which is shared by runtime configuration and the provisioning command.
+The single-vendor catalogue is backed by Appwrite TablesDB and Storage. It has a public read model and a protected administration workflow. Resource IDs live in `appwrite/catalogue-resources.json`, which is shared by runtime configuration and the provisioning command.
 
 ## Tables
 
@@ -20,18 +20,28 @@ Maps a product to an Appwrite Storage file with accessible alt text, primary sta
 
 Stores ordered display specifications with typed text, number, or boolean values and an optional unit. `(productId, code)` is unique.
 
+### `inventory-movements`
+
+Append-only stock ledger. Every adjustment stores the before/after quantity, signed delta, reason, reference, actor, idempotency key, and timestamp. `operationId` is unique so a retried request cannot change stock twice.
+
+### `admin-audit-log`
+
+Append-only history for product, variant, media, and inventory actions. Audit entries include the actor, action, summary, timestamp, and bounded before/after snapshots.
+
 ## Access control
 
-- All tables enable row security and have no public table permissions.
+- All tables enable row security. The `store-admins` team receives role-specific table permissions.
 - Provisioned published rows receive only `read("any")`.
-- The image bucket enables file security and has no public bucket permissions.
+- Draft and archived rows have no public row permissions.
+- The image bucket enables file security and grants write access only to catalogue managers and owners.
 - Provisioned product files receive only `read("any")`.
-- The server API key is used by the provisioning command only and must never be exposed as a `NEXT_PUBLIC_` variable.
+- Inventory movements and audit entries are append-only through the application workflow; neither has an admin update/delete path.
+- Server API keys must never be exposed as `NEXT_PUBLIC_` variables.
 
 ## Runtime behaviour
 
-The repository reads published products and their active variants, media, and attributes in parallel. Appwrite responses are validated before they reach UI components. Successful snapshots are cached for 60 seconds; missing configuration, timeouts, API errors, or invalid relational data produce a finite, user-friendly unavailable state rather than a retry loop or fixture fallback.
+The repository reads published products and their active variants, media, and attributes in parallel. Appwrite responses are validated before they reach UI components. Successful snapshots are cached by Next.js for 60 seconds and invalidated after admin writes. Appwrite list caching is disabled so there is only one cache authority. Missing configuration, timeouts, API errors, or invalid relational data produce a finite, user-friendly unavailable state rather than a retry loop or fixture fallback.
 
 ## Provisioning behaviour
 
-`npm run catalogue:check` validates all seed relationships and local image files without network access. `npm run catalogue:provision` creates missing resources and upserts deterministic rows and files. It deliberately does not delete rows that are absent from the seed; removals should be an explicit future administration workflow.
+`npm run catalogue:check` validates all seed relationships and local image files without network access. `npm run catalogue:provision` creates or updates the admin team, tables, indexes, permissions, bucket, deterministic rows, and files. It deliberately does not delete rows that are absent from the seed; administrators archive products instead.

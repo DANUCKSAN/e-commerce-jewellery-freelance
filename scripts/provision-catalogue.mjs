@@ -18,6 +18,18 @@ const resources = JSON.parse(
 
 const dryRun = process.argv.includes("--dry-run");
 const publicRead = 'read("any")';
+const team = `team:${resources.adminTeamId}`;
+const owner = `${team}/owner`;
+const catalogueManager = `${team}/catalogue-manager`;
+const inventoryManager = `${team}/inventory-manager`;
+const cataloguePermissions = [
+  `read("${team}")`,
+  `create("${catalogueManager}")`,
+  `create("${owner}")`,
+  `update("${catalogueManager}")`,
+  `update("${owner}")`,
+  `delete("${owner}")`,
+];
 
 const varchar = (key, size, options = {}) => ({
   type: "varchar",
@@ -43,11 +55,16 @@ const boolean = (key, options = {}) => ({
   type: "boolean",
   body: { key, required: true, array: false, ...options },
 });
+const datetime = (key, options = {}) => ({
+  type: "datetime",
+  body: { key, required: true, array: false, ...options },
+});
 
 const tableDefinitions = [
   {
     id: resources.productsTableId,
     name: "Products",
+    permissions: cataloguePermissions,
     columns: [
       varchar("slug", 180),
       varchar("name", 220),
@@ -73,6 +90,12 @@ const tableDefinitions = [
       enumeration("status", ["draft", "published", "archived"]),
       boolean("featured"),
       integer("sortOrder"),
+      varchar("seoTitle", 220, { required: false }),
+      varchar("seoDescription", 500, { required: false }),
+      datetime("publishedAt", { required: false }),
+      varchar("createdBy", 36, { required: false }),
+      varchar("updatedBy", 36, { required: false }),
+      integer("version", { required: false, default: 1 }),
     ],
     indexes: [
       { key: "slug_unique", type: "unique", columns: ["slug"] },
@@ -87,6 +110,7 @@ const tableDefinitions = [
   {
     id: resources.variantsTableId,
     name: "Product variants",
+    permissions: cataloguePermissions,
     columns: [
       varchar("productId", 36),
       varchar("sku", 100),
@@ -104,6 +128,10 @@ const tableDefinitions = [
       integer("leadTimeDays"),
       boolean("active"),
       integer("sortOrder"),
+      boolean("trackInventory", { required: false, default: true }),
+      integer("lowStockThreshold", { required: false, default: 2 }),
+      integer("reservedStock", { required: false, default: 0 }),
+      integer("version", { required: false, default: 1 }),
     ],
     indexes: [
       { key: "sku_unique", type: "unique", columns: ["sku"] },
@@ -119,12 +147,17 @@ const tableDefinitions = [
   {
     id: resources.mediaTableId,
     name: "Product media",
+    permissions: cataloguePermissions,
     columns: [
       varchar("productId", 36),
       varchar("fileId", 36),
       varchar("altText", 300),
       integer("position"),
       boolean("isPrimary"),
+      varchar("mimeType", 100, { required: false }),
+      integer("width", { required: false }),
+      integer("height", { required: false }),
+      integer("version", { required: false, default: 1 }),
     ],
     indexes: [
       {
@@ -138,6 +171,7 @@ const tableDefinitions = [
   {
     id: resources.attributesTableId,
     name: "Product attributes",
+    permissions: cataloguePermissions,
     columns: [
       varchar("productId", 36),
       varchar("code", 100),
@@ -148,6 +182,7 @@ const tableDefinitions = [
       boolean("valueBoolean", { required: false }),
       varchar("unitSymbol", 32, { required: false }),
       integer("position"),
+      integer("version", { required: false, default: 1 }),
     ],
     indexes: [
       {
@@ -160,6 +195,87 @@ const tableDefinitions = [
         type: "key",
         columns: ["productId", "position"],
         orders: ["ASC", "ASC"],
+      },
+    ],
+  },
+  {
+    id: resources.inventoryTableId,
+    name: "Inventory movements",
+    permissions: [
+      `read("${team}")`,
+      `create("${inventoryManager}")`,
+      `create("${catalogueManager}")`,
+      `create("${owner}")`,
+    ],
+    columns: [
+      varchar("productId", 36),
+      varchar("variantId", 36),
+      enumeration("movementType", [
+        "restock",
+        "adjustment",
+        "damage",
+        "return",
+        "correction",
+        "reservation",
+        "release",
+        "sale",
+      ]),
+      integer("quantityDelta", { min: -1_000_000, max: 1_000_000 }),
+      integer("stockBefore"),
+      integer("stockAfter"),
+      varchar("reason", 500),
+      varchar("referenceId", 100, { required: false }),
+      varchar("actorUserId", 36),
+      varchar("operationId", 36),
+      datetime("occurredAt"),
+    ],
+    indexes: [
+      { key: "operation_unique", type: "unique", columns: ["operationId"] },
+      {
+        key: "variant_occurred",
+        type: "key",
+        columns: ["variantId", "occurredAt"],
+        orders: ["ASC", "DESC"],
+      },
+      {
+        key: "product_occurred",
+        type: "key",
+        columns: ["productId", "occurredAt"],
+        orders: ["ASC", "DESC"],
+      },
+    ],
+  },
+  {
+    id: resources.auditTableId,
+    name: "Admin audit log",
+    permissions: [
+      `read("${team}")`,
+      `create("${inventoryManager}")`,
+      `create("${catalogueManager}")`,
+      `create("${owner}")`,
+    ],
+    columns: [
+      enumeration("entityType", ["product", "variant", "media", "inventory"]),
+      varchar("entityId", 36),
+      varchar("action", 100),
+      varchar("actorUserId", 36),
+      varchar("summary", 500),
+      mediumtext("beforeData", { required: false }),
+      mediumtext("afterData", { required: false }),
+      datetime("occurredAt"),
+    ],
+    indexes: [
+      {
+        key: "entity_occurred",
+        type: "key",
+        columns: ["entityType", "entityId", "occurredAt"],
+        orders: ["ASC", "ASC", "DESC"],
+      },
+      {
+        key: "actor_occurred",
+        type: "key",
+        columns: ["actorUserId", "occurredAt"],
+        orders: ["ASC", "DESC"],
       },
     ],
   },
@@ -273,6 +389,10 @@ function prepareRows() {
           status: "published",
           featured: product.featured,
           sortOrder,
+          seoTitle: product.name,
+          seoDescription: product.shortDescription.slice(0, 500),
+          publishedAt: new Date().toISOString(),
+          version: 1,
         },
       },
       variant: {
@@ -289,6 +409,10 @@ function prepareRows() {
           leadTimeDays: product.leadTimeDays,
           active: true,
           sortOrder: 0,
+          trackInventory: product.availability !== "made-to-order",
+          lowStockThreshold: 2,
+          reservedStock: 0,
+          version: 1,
         },
       },
       media: {
@@ -299,6 +423,8 @@ function prepareRows() {
           altText: `${product.name} by Aurelle`,
           position: 0,
           isPrimary: true,
+          mimeType: "image/webp",
+          version: 1,
         },
       },
       attributes: product.attributes.map((attribute, position) => ({
@@ -316,6 +442,7 @@ function prepareRows() {
           valueBoolean: attribute.valueBoolean,
           unitSymbol: attribute.unitSymbol,
           position,
+          version: 1,
         },
       })),
     };
@@ -454,6 +581,19 @@ async function ensureDatabase(api) {
   console.log(`Created database ${resources.databaseId}.`);
 }
 
+async function ensureAdminTeam(api) {
+  const resourcePath = `/teams/${encoded(resources.adminTeamId)}`;
+  if (await resourceExists(api, resourcePath)) return;
+  await api("POST", "/teams", {
+    body: {
+      teamId: resources.adminTeamId,
+      name: "Aurella store administrators",
+      roles: ["owner", "catalogue-manager", "inventory-manager"],
+    },
+  });
+  console.log(`Created admin team ${resources.adminTeamId}.`);
+}
+
 async function ensureTable(api, definition) {
   const base = `/tablesdb/${encoded(resources.databaseId)}/tables`;
   const resourcePath = `${base}/${encoded(definition.id)}`;
@@ -463,18 +603,22 @@ async function ensureTable(api, definition) {
       body: {
         tableId: definition.id,
         name: definition.name,
-        permissions: [],
+        permissions: definition.permissions,
         rowSecurity: true,
         enabled: true,
       },
     });
     console.log(`Created table ${definition.id}.`);
   } else {
-    assert(
-      existing.rowSecurity === true,
-      `${definition.id} must enable row security`,
-    );
     assertNoPublicWrite(existing, `table ${definition.id}`);
+    await api("PUT", resourcePath, {
+      body: {
+        name: definition.name,
+        permissions: definition.permissions,
+        rowSecurity: true,
+        enabled: true,
+      },
+    });
   }
 
   for (const column of definition.columns) {
@@ -504,13 +648,21 @@ async function ensureTable(api, definition) {
 
 async function ensureBucket(api) {
   const resourcePath = `/storage/buckets/${encoded(resources.imagesBucketId)}`;
+  const permissions = [
+    `read("${team}")`,
+    `create("${catalogueManager}")`,
+    `create("${owner}")`,
+    `update("${catalogueManager}")`,
+    `update("${owner}")`,
+    `delete("${owner}")`,
+  ];
   const existing = await resourceExists(api, resourcePath);
   if (!existing) {
     await api("POST", "/storage/buckets", {
       body: {
         bucketId: resources.imagesBucketId,
         name: "Product images",
-        permissions: [],
+        permissions,
         fileSecurity: true,
         enabled: true,
         maximumFileSize: 10_000_000,
@@ -529,6 +681,20 @@ async function ensureBucket(api) {
     `${resources.imagesBucketId} must enable file security`,
   );
   assertNoPublicWrite(existing, `bucket ${resources.imagesBucketId}`);
+  await api("PUT", resourcePath, {
+    body: {
+      name: "Product images",
+      permissions,
+      fileSecurity: true,
+      enabled: true,
+      maximumFileSize: 10_000_000,
+      allowedFileExtensions: ["webp", "jpg", "jpeg", "png"],
+      compression: "none",
+      encryption: false,
+      antivirus: true,
+      transformations: true,
+    },
+  });
 }
 
 async function ensureImage(api, image) {
@@ -574,6 +740,7 @@ async function main() {
 
   const api = createApi(readConfiguration());
   await ensureDatabase(api);
+  await ensureAdminTeam(api);
   for (const definition of tableDefinitions) await ensureTable(api, definition);
   await ensureBucket(api);
 
