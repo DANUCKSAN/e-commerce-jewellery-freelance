@@ -146,7 +146,8 @@ function rowsUrl(endpoint: string, tableId: string, queries: string[]) {
   );
   for (const query of queries) url.searchParams.append("queries[]", query);
   url.searchParams.set("total", "false");
-  url.searchParams.set("ttl", "30");
+  // Next owns catalogue caching so admin invalidation has one predictable layer.
+  url.searchParams.set("ttl", "0");
   return url;
 }
 

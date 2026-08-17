@@ -10,12 +10,20 @@ import {
   signIn,
   signUp,
 } from "@/lib/appwrite/auth.service";
+import { parseSafeReturnPath } from "@/lib/safe-return-path";
 import type { AuthFormValues, AuthMode } from "@/lib/validations/auth";
 
 import { AuthForm } from "./AuthForm";
 
-export default function AuthScreen({ mode }: { mode: AuthMode }) {
+export default function AuthScreen({
+  mode,
+  returnTo = "/",
+}: {
+  mode: AuthMode;
+  returnTo?: string;
+}) {
   const router = useRouter();
+  const destination = parseSafeReturnPath(returnTo);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
 
@@ -25,7 +33,7 @@ export default function AuthScreen({ mode }: { mode: AuthMode }) {
     getCurrentUser()
       .then((user) => {
         if (!active) return;
-        if (user) router.replace("/");
+        if (user) router.replace(destination);
       })
       .catch(() => {
         // The form remains available and will surface a useful configuration or
@@ -38,7 +46,7 @@ export default function AuthScreen({ mode }: { mode: AuthMode }) {
     return () => {
       active = false;
     };
-  }, [router]);
+  }, [destination, router]);
 
   async function handleSubmit(values: AuthFormValues) {
     setSubmissionError(null);
@@ -58,7 +66,7 @@ export default function AuthScreen({ mode }: { mode: AuthMode }) {
         });
       }
 
-      router.replace("/");
+      router.replace(destination);
     } catch (error) {
       setSubmissionError(getAuthErrorMessage(error, mode));
     }

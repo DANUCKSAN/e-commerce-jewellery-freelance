@@ -4,5 +4,8 @@
   "variantsTableId": "product-variants",
   "mediaTableId": "product-media",
   "attributesTableId": "product-attributes",
+  "inventoryTableId": "inventory-movements",
+  "auditTableId": "admin-audit-log",
+  "adminTeamId": "store-admins",
   "imagesBucketId": "product-images"
 }
