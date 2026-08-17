@@ -1,0 +1,8 @@
+{
+  "databaseId": "aurella-commerce",
+  "productsTableId": "products",
+  "variantsTableId": "product-variants",
+  "mediaTableId": "product-media",
+  "attributesTableId": "product-attributes",
+  "imagesBucketId": "product-images"
+}

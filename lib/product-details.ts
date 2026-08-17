@@ -3,8 +3,7 @@ import type {
   CatalogueProduct,
   CatalogueProductDetail,
   JewelleryCategory,
-} from "./catalogue";
-import { getCatalogueProductImage } from "./catalogue";
+} from "./catalogue-model";
 import {
   cleanCatalogueText,
   createStorefrontProducts,
@@ -66,12 +65,6 @@ function formatAttribute(attribute: CatalogueAttribute) {
   }
 
   return null;
-}
-
-export function getProductImage(slug: string) {
-  return (
-    getCatalogueProductImage(slug) ?? "/images/aurelle/diamond-solitaire.webp"
-  );
 }
 
 const fallbackImageByCategory: Record<JewelleryCategory, string> = {

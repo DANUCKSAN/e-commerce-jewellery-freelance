@@ -5,7 +5,7 @@ import type {
   JewelleryProductType,
   JewelleryCategory,
   ProductAvailability,
-} from "./catalogue";
+} from "./catalogue-model";
 
 export type StorefrontProduct = {
   id: string;

@@ -2,13 +2,18 @@ import type { Metadata } from "next";
 import Image from "next/image";
 
 import heroRings from "../../../public/images/aurelle/hero-rings.webp";
+import CatalogueUnavailable from "../../../components/CatalogueUnavailable";
 import ProductCatalogue, {
   type CategoryFilter,
   type PriceFilter,
   type ProductTypeFilter,
   type SortOrder,
 } from "../../../components/ProductCatalogue";
-import { getCatalogue, jewelleryCategories, jewelleryProductTypes } from "../../../lib/catalogue";
+import { getCatalogue } from "../../../lib/catalogue";
+import {
+  jewelleryCategories,
+  jewelleryProductTypes,
+} from "../../../lib/catalogue-model";
 import { createStorefrontProducts } from "../../../lib/storefront-products";
 
 export const metadata: Metadata = {
@@ -58,7 +63,7 @@ export default async function ProductsPage({
   searchParams: CollectionSearchParams;
 }) {
   const [query, catalogue] = await Promise.all([searchParams, getCatalogue()]);
-  const products = createStorefrontProducts(catalogue);
+  const products = catalogue.ok ? createStorefrontProducts(catalogue.data) : [];
   const category = readCategory(firstValue(query.category));
 
   return (
@@ -88,13 +93,17 @@ export default async function ProductsPage({
         </div>
       </section>
 
-      <ProductCatalogue
-        products={products}
-        category={category}
-        productType={readProductType(firstValue(query.type))}
-        price={readPrice(firstValue(query.price))}
-        sort={readSort(firstValue(query.sort))}
-      />
+      {catalogue.ok ? (
+        <ProductCatalogue
+          products={products}
+          category={category}
+          productType={readProductType(firstValue(query.type))}
+          price={readPrice(firstValue(query.price))}
+          sort={readSort(firstValue(query.sort))}
+        />
+      ) : (
+        <CatalogueUnavailable compact />
+      )}
     </main>
   );
 }

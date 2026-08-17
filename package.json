@@ -9,6 +9,8 @@
     "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
+    "catalogue:check": "node scripts/provision-catalogue.mjs --dry-run",
+    "catalogue:provision": "node scripts/provision-catalogue.mjs",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },
